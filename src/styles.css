@@ -1,0 +1,136 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  --font-sans: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", system-ui, sans-serif;
+  --font-serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --color-background: #0c0c0a;
+  --color-foreground: #eceae4;
+  --color-card: #141410;
+  --color-card-foreground: #eceae4;
+  --color-popover: #1a1a16;
+  --color-popover-foreground: #eceae4;
+  --color-primary: #e8e2d4;
+  --color-primary-foreground: #0c0c0a;
+  --color-secondary: #1c1c18;
+  --color-secondary-foreground: #eceae4;
+  --color-muted: #1c1c18;
+  --color-muted-foreground: #9a978c;
+  --color-accent: #22221c;
+  --color-accent-foreground: #eceae4;
+  --color-destructive: #c07a72;
+  --color-border: rgb(236 234 228 / 0.1);
+  --color-input: rgb(236 234 228 / 0.12);
+  --color-ring: #c5c0b2;
+  --color-up: #6f9e8a;
+  --color-down: #c07a72;
+  --color-warn: #b89a74;
+  --color-bone: #c5c0b2;
+
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius: 0.75rem;
+
+  --shadow-border: 0 0 0 1px rgb(236 234 228 / 0.08);
+  --shadow-border-hover: 0 0 0 1px rgb(236 234 228 / 0.14);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    overflow-x: hidden;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    letter-spacing: 0.01em;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes tape-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.tape-track {
+  animation: tape-scroll 42s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tape-track {
+    animation: none;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(236 234 228 / 0.06) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}

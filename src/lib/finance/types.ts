@@ -1,6 +1,9 @@
 export type Verdict = "enter" | "probe" | "wait" | "avoid";
+
 export type Horizon = "intraday" | "swing" | "position";
+
 export type Severity = "high" | "mid" | "low";
+
 export type DimensionKey =
   | "sentiment"
   | "catalyst"
@@ -73,8 +76,16 @@ export type SearchHit = {
   type: string;
 };
 
-export type DimensionScore = { score: number; note: string };
-export type RiskItem = { title: string; severity: Severity; detail: string };
+export type DimensionScore = {
+  score: number;
+  note: string;
+};
+
+export type RiskItem = {
+  title: string;
+  severity: Severity;
+  detail: string;
+};
 
 export type Analysis = {
   symbol: string;
@@ -101,7 +112,10 @@ export type QuoteBundle = {
   tech: TechSnapshot;
 };
 
-export const DIMENSION_META: Record<DimensionKey, { label: string; hint: string }> = {
+export const DIMENSION_META: Record<
+  DimensionKey,
+  { label: string; hint: string }
+> = {
   sentiment: { label: "舆情", hint: "新闻与市场情绪" },
   catalyst: { label: "催化", hint: "近期事件与预期差" },
   momentum: { label: "动量", hint: "趋势与超买超卖" },
@@ -110,7 +124,10 @@ export const DIMENSION_META: Record<DimensionKey, { label: string; hint: string 
   macro: { label: "宏观", hint: "利率、板块、汇率" },
 };
 
-export const VERDICT_META: Record<Verdict, { label: string; brief: string }> = {
+export const VERDICT_META: Record<
+  Verdict,
+  { label: string; brief: string }
+> = {
   enter: { label: "可以入场", brief: "赔率与时机同向" },
   probe: { label: "谨慎试探", brief: "小仓位验证" },
   wait: { label: "继续观望", brief: "等待更干净的点" },
@@ -119,7 +136,10 @@ export const VERDICT_META: Record<Verdict, { label: string; brief: string }> = {
 
 export type BookVerdict = "hold" | "add" | "trim" | "rebalance" | "wait";
 
-export const BOOK_VERDICT_META: Record<BookVerdict, { label: string; brief: string }> = {
+export const BOOK_VERDICT_META: Record<
+  BookVerdict,
+  { label: string; brief: string }
+> = {
   hold: { label: "继续持有", brief: "组合无需大动" },
   add: { label: "可加仓", brief: "赔率仍在，仓位偏轻" },
   trim: { label: "建议减仓", brief: "风险或仓位过重" },

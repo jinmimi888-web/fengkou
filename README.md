@@ -11,7 +11,9 @@ npm install
 npm run dev
 ```
 
-需要 Node 22。
+需要 Node 22。默认在 `http://localhost:8080`。
+
+登录、每人独立数据、模型研判需要在运行环境里配置账号与数据库（Better Auth + Postgres / PGLite）。行情来自公开报价接口。
 
 ## 功能
 
