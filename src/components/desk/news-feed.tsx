@@ -71,6 +71,105 @@ export function NewsPulse({
   );
 }
 
+/** Dense right-rail news panel for terminal layout. */
+export function NewsRail({
+  items,
+  loading,
+  fetching,
+  updatedAt,
+  onRefresh,
+  onOpenAll,
+  onOpenSymbol,
+}: {
+  items: NewsItem[];
+  loading: boolean;
+  fetching: boolean;
+  updatedAt?: number;
+  onRefresh: () => void;
+  onOpenAll: () => void;
+  onOpenSymbol: (symbol: string) => void;
+}) {
+  const freshCount = items.filter((n) => isFresh(n.publishedAt, 6 * HOUR)).length;
+  const rows = items.slice(0, 14);
+
+  return (
+    <div className="flex h-full min-h-0 flex-col rounded-md border border-border/70 bg-card/60">
+      <div className="flex items-center gap-2 border-b border-border/70 px-2.5 py-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] tracking-widest text-muted-foreground">资讯</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {freshCount > 0 ? (
+              <span className="text-bone">{freshCount} 条近 6h</span>
+            ) : (
+              "观察池"
+            )}
+            {updatedAt ? ` · ${relativeTime(updatedAt) || "刚刚"}` : ""}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="text-muted-foreground hover:text-foreground"
+          disabled={fetching}
+          onClick={onRefresh}
+          aria-label="刷新资讯"
+        >
+          <RefreshCw className={cn("size-3.5", fetching && "animate-spin")} />
+        </button>
+        <button
+          type="button"
+          onClick={onOpenAll}
+          className="text-[11px] text-bone hover:text-foreground"
+        >
+          全部
+        </button>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="space-y-2 p-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 rounded-md" />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
+          <p className="p-3 text-xs text-muted-foreground">观察池新闻正在汇集</p>
+        ) : (
+          <ul>
+            {rows.map((n, i) => (
+              <li key={`${n.id}-${i}`} className="border-b border-border/50 last:border-0">
+                <div className="flex gap-1.5 px-2.5 py-2">
+                  <a
+                    href={n.url || undefined}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="min-w-0 flex-1 hover:text-bone"
+                  >
+                    <p className="line-clamp-2 text-[12px] leading-snug">{n.title}</p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+                      <button
+                        type="button"
+                        className="text-bone hover:underline"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          onOpenSymbol(n.symbol);
+                        }}
+                      >
+                        {displayName(n.symbol)}
+                      </button>
+                      <span>{relativeTime(n.publishedAt) || ""}</span>
+                      {isFresh(n.publishedAt) ? <Badge variant="up">新</Badge> : null}
+                    </p>
+                  </a>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function NewsDesk({
   items,
   symbols,
@@ -124,7 +223,7 @@ export function NewsDesk({
             className={cn(
               "h-9 rounded-md px-3 text-sm",
               filter === sym
-                ? "bg-card text-foreground shadow-[var(--shadow-border)]"
+                ? "bg-card/95 text-foreground shadow-[var(--shadow-border)] backdrop-blur-md"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
@@ -167,7 +266,7 @@ export function NewsList({
   }
   if (!items.length) {
     return (
-      <div className="rounded-xl bg-card p-8 text-center text-sm text-muted-foreground shadow-[var(--shadow-border)]">
+      <div className="glass rounded-2xl p-8 text-center text-sm text-muted-foreground">
         {empty}
       </div>
     );
@@ -199,7 +298,7 @@ export function NewsList({
             {g.label}
             <span className="ml-2 tabular-nums">{g.rows.length}</span>
           </p>
-          <ul className="overflow-hidden rounded-xl bg-card shadow-[var(--shadow-border)]">
+          <ul className="glass overflow-hidden rounded-2xl">
             {g.rows.map((n, i) => (
               <li key={`${n.id}-${i}`} className="border-b border-border last:border-0">
                 <div className="flex items-start gap-2 px-4 py-3">

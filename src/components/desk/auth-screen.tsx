@@ -1,12 +1,15 @@
-import { useState } from "react";
-import { GROK_PROVIDERS, authClient, signIn } from "@/lib/auth/client";
+import { useEffect, useState } from "react";
+import { SOCIAL_PROVIDERS, authClient, signIn } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usernameError } from "@/lib/account";
 import {
   completePasswordReset,
+  passwordError,
   requestPasswordReset,
 } from "@/lib/password";
+import { SiteFooter } from "@/components/site-footer";
+import { isTelegramMiniApp } from "@/lib/telegram-webapp";
 
 type Mode = "signin" | "signup" | "recover" | "reset";
 
@@ -34,6 +37,7 @@ function authErrorZh(raw: string): string {
 }
 
 export function AuthScreen() {
+  const [inTelegram, setInTelegram] = useState(false);
   const [mode, setMode] = useState<Mode>("signin");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -43,6 +47,25 @@ export function AuthScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (isTelegramMiniApp()) {
+      setInTelegram(true);
+      return;
+    }
+    // SDK script may still be loading on first paint.
+    let tries = 0;
+    const id = window.setInterval(() => {
+      tries += 1;
+      if (isTelegramMiniApp()) {
+        setInTelegram(true);
+        window.clearInterval(id);
+      } else if (tries > 40) {
+        window.clearInterval(id);
+      }
+    }, 50);
+    return () => window.clearInterval(id);
+  }, []);
 
   function go(next: Mode) {
     setMode(next);
@@ -67,8 +90,9 @@ export function AuthScreen() {
       setError("请填写有效邮箱");
       return;
     }
-    if (password.length < 8) {
-      setError("密码至少 8 位");
+    const badPw = passwordError(password);
+    if (badPw) {
+      setError(badPw);
       return;
     }
     setBusy(true);
@@ -142,8 +166,9 @@ export function AuthScreen() {
   async function onReset(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (password.length < 8) {
-      setError("新密码至少 8 位");
+    const badPw = passwordError(password);
+    if (badPw) {
+      setError(badPw);
       return;
     }
     if (password !== confirm) {
@@ -189,31 +214,40 @@ export function AuthScreen() {
           : "每个用户名独立保存观察池、仓位、流水和研判。换设备登录同一账户即可接上。";
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-background px-4 py-10 text-foreground">
+    <main className="grid min-h-dvh place-items-center px-4 py-10 text-foreground">
       <div className="w-full max-w-md">
         <div className="mb-8 flex items-center gap-3">
-          <div className="flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="font-serif text-xl leading-none">锋</span>
-          </div>
+          <img
+            src="/logo.png"
+            alt="锋口"
+            width={48}
+            height={48}
+            className="size-12 rounded-2xl object-cover shadow-[var(--shadow-border)]"
+          />
           <div>
             <p className="font-serif text-2xl leading-none tracking-tight">锋口</p>
             <p className="mt-1 text-[11px] tracking-[0.18em] text-muted-foreground">
               入场研判台
             </p>
+            {inTelegram ? (
+              <p className="mt-1.5 text-[10px] tracking-wide text-muted-foreground/75">
+                在 Telegram 小程序中打开
+              </p>
+            ) : null}
           </div>
         </div>
-        <div className="rounded-xl bg-card p-6 shadow-[var(--shadow-border)]">
+        <div className="glass rounded-2xl border border-white/55 p-5 sm:p-6 dark:border-border/70">
           <p className="font-serif text-2xl">{title}</p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{copy}</p>
           {mode === "signin" || mode === "signup" ? (
-            <div className="mt-5 flex rounded-lg bg-secondary p-1">
+            <div className="seg mt-5 w-full">
               <button
                 type="button"
                 onClick={() => go("signin")}
                 className={
                   mode === "signin"
-                    ? "h-9 flex-1 rounded-md bg-card text-sm shadow-[var(--shadow-border)]"
-                    : "h-9 flex-1 rounded-md text-sm text-muted-foreground hover:text-foreground"
+                    ? "seg-item is-active h-9 flex-1 text-sm"
+                    : "seg-item h-9 flex-1 text-sm"
                 }
               >
                 登录
@@ -223,8 +257,8 @@ export function AuthScreen() {
                 onClick={() => go("signup")}
                 className={
                   mode === "signup"
-                    ? "h-9 flex-1 rounded-md bg-card text-sm shadow-[var(--shadow-border)]"
-                    : "h-9 flex-1 rounded-md text-sm text-muted-foreground hover:text-foreground"
+                    ? "seg-item is-active h-9 flex-1 text-sm"
+                    : "seg-item h-9 flex-1 text-sm"
                 }
               >
                 注册
@@ -263,7 +297,7 @@ export function AuthScreen() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="至少 8 位"
+                  placeholder="至少 8 位，中文/字母/数字/下划线"
                   autoComplete={mode === "signup" ? "new-password" : "current-password"}
                   required
                 />
@@ -331,7 +365,7 @@ export function AuthScreen() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="至少 8 位"
+                  placeholder="至少 8 位，中文/字母/数字/下划线"
                   autoComplete="new-password"
                   required
                 />
@@ -361,18 +395,18 @@ export function AuthScreen() {
             </form>
           ) : null}
 
-          {mode === "signin" || mode === "signup" ? (
+          {(mode === "signin" || mode === "signup") && SOCIAL_PROVIDERS.length > 0 ? (
             <>
               <p className="my-5 text-center text-xs tracking-widest text-muted-foreground">
                 或用其他方式
               </p>
               <div className="grid gap-2">
-                {GROK_PROVIDERS.map((p) => (
+                {SOCIAL_PROVIDERS.map((p) => (
                   <Button
-                    key={p.providerId}
+                    key={p.id}
                     type="button"
                     variant="outline"
-                    onClick={() => void signIn(p.providerId, { callbackURL: "/" })}
+                    onClick={() => void signIn(p.id, { callbackURL: "/" })}
                   >
                     使用 {p.label === "Google" ? "Google" : "X"} 继续
                   </Button>
@@ -381,9 +415,7 @@ export function AuthScreen() {
             </>
           ) : null}
         </div>
-        <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
-          内容不构成投资建议。账户资料只属于你自己。
-        </p>
+        <SiteFooter compact className="mt-8 border-t-0" />
       </div>
     </main>
   );

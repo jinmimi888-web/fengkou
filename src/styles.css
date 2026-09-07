@@ -1,15 +1,61 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Class-based dark mode (optional toggle). Light Liquid Glass is default. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB",
-    "Microsoft YaHei", system-ui, sans-serif;
+    "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
+  /* —— Light / Liquid Glass (default) —— */
+  --color-background: #f2f3f7;
+  --color-foreground: #1c1c1e;
+  --color-card: rgb(255 255 255 / 0.66);
+  --color-card-foreground: #1c1c1e;
+  --color-popover: rgb(255 255 255 / 0.86);
+  --color-popover-foreground: #1c1c1e;
+  --color-primary: #1c1c1e;
+  --color-primary-foreground: #fafafa;
+  --color-secondary: rgb(120 120 128 / 0.1);
+  --color-secondary-foreground: #1c1c1e;
+  --color-muted: rgb(120 120 128 / 0.08);
+  --color-muted-foreground: #6e6e73;
+  --color-accent: rgb(120 120 128 / 0.12);
+  --color-accent-foreground: #1c1c1e;
+  --color-destructive: #d70015;
+  --color-border: rgb(60 60 67 / 0.1);
+  --color-input: rgb(60 60 67 / 0.12);
+  --color-ring: #b08a3c;
+  --color-up: #1f8a5b;
+  --color-down: #d6453a;
+  --color-warn: #c48a1a;
+  /* Brand gold (readable on light) + cyan tint */
+  --color-bone: #8a7340;
+  --color-tint: #2f7f9e;
+
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 1.75rem;
+  --radius: 1rem;
+
+  /* Soft depth — prefer blur + lift over hard outlines */
+  --shadow-border: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.05);
+  --shadow-border-hover: 0 2px 4px rgb(0 0 0 / 0.05), 0 12px 32px rgb(0 0 0 / 0.08);
+  --shadow-glass: 0 1px 0 rgb(255 255 255 / 0.65) inset,
+    0 1px 2px rgb(0 0 0 / 0.04), 0 10px 30px rgb(0 0 0 / 0.06);
+}
+
+/* Optional dark tokens (kept for 深色/浅色 toggle) */
+.dark {
   --color-background: #0c0c0a;
   --color-foreground: #eceae4;
-  --color-card: #141410;
+  --color-card: rgb(20 20 16 / 0.72);
   --color-card-foreground: #eceae4;
   --color-popover: #1a1a16;
   --color-popover-foreground: #eceae4;
@@ -29,16 +75,11 @@
   --color-down: #c07a72;
   --color-warn: #b89a74;
   --color-bone: #c5c0b2;
-
-  --radius-xs: 0.25rem;
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
-  --radius: 0.75rem;
-
+  --color-tint: #6a9bb8;
   --shadow-border: 0 0 0 1px rgb(236 234 228 / 0.08);
   --shadow-border-hover: 0 0 0 1px rgb(236 234 228 / 0.14);
+  --shadow-glass: 0 0 0 1px rgb(236 234 228 / 0.08),
+    0 12px 40px rgb(0 0 0 / 0.35);
 }
 
 @layer base {
@@ -55,9 +96,30 @@
   body,
   #app {
     min-height: 100%;
-    background: var(--color-background);
     color: var(--color-foreground);
     overflow-x: hidden;
+  }
+
+  /* Soft light canvas with warm / cool orbs — glass panels refract this */
+  html,
+  body,
+  #app {
+    background-color: var(--color-background);
+    background-image:
+      radial-gradient(920px 520px at 8% -8%, rgb(255 236 210 / 0.55), transparent 58%),
+      radial-gradient(780px 480px at 96% 0%, rgb(196 230 245 / 0.5), transparent 52%),
+      radial-gradient(640px 420px at 50% 108%, rgb(232 228 255 / 0.35), transparent 55%),
+      linear-gradient(180deg, #f7f7fa 0%, #eef0f5 48%, #e9ecf2 100%);
+    background-attachment: fixed;
+  }
+
+  .dark,
+  .dark body,
+  .dark #app {
+    background-image:
+      radial-gradient(900px 500px at 12% -10%, rgb(80 60 30 / 0.22), transparent 55%),
+      radial-gradient(700px 420px at 100% 0%, rgb(30 70 90 / 0.2), transparent 50%),
+      linear-gradient(180deg, #0c0c0a 0%, #10100e 100%);
   }
 
   body {
@@ -128,9 +190,125 @@
   background-image: linear-gradient(
     90deg,
     transparent 0%,
-    rgb(236 234 228 / 0.06) 50%,
+    rgb(60 60 67 / 0.06) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
+}
+
+.dark .shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(236 234 228 / 0.06) 50%,
+    transparent 100%
+  );
+}
+
+/* —— Apple-like Liquid Glass materials —— */
+.glass,
+.desk-panel {
+  border: 1px solid rgb(255 255 255 / 0.55);
+  background: rgb(255 255 255 / 0.58);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-glass);
+}
+
+.glass-tight,
+.desk-panel.dense {
+  border-radius: var(--radius-lg);
+}
+
+.glass-nav {
+  border-color: rgb(255 255 255 / 0.45);
+  background: rgb(255 255 255 / 0.55);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  backdrop-filter: blur(40px) saturate(190%);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.5) inset,
+    0 1px 2px rgb(0 0 0 / 0.03);
+}
+
+.dark .glass,
+.dark .desk-panel,
+.dark .glass-nav {
+  border-color: rgb(236 234 228 / 0.1);
+  background: rgb(20 20 16 / 0.72);
+  box-shadow: var(--shadow-glass);
+}
+
+/* Hairline divider helper */
+.hairline {
+  border-color: rgb(60 60 67 / 0.08);
+}
+
+.dark .hairline {
+  border-color: rgb(236 234 228 / 0.1);
+}
+
+/* Segmented control (pill) */
+.seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9999px;
+  background: rgb(120 120 128 / 0.12);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+}
+
+.dark .seg {
+  background: rgb(236 234 228 / 0.08);
+}
+
+.seg-item {
+  height: 1.75rem;
+  border-radius: 9999px;
+  padding-inline: 0.65rem;
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+  transition: color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.seg-item[data-active="true"],
+.seg-item.is-active {
+  background: rgb(255 255 255 / 0.92);
+  color: var(--color-foreground);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 0 rgb(255 255 255 / 0.8) inset;
+}
+
+.dark .seg-item[data-active="true"],
+.dark .seg-item.is-active {
+  background: rgb(40 40 34 / 0.95);
+  box-shadow: var(--shadow-border);
+}
+
+
+/* Telegram Mini App — safe area / stable viewport when opened via Bot Menu Button */
+html.tg-miniapp,
+html.tg-miniapp body {
+  min-height: var(--tg-viewport-stable-height, var(--tg-viewport-height, 100dvh));
+}
+
+html.tg-miniapp body {
+  /* Prefer Telegram-injected insets when present; fall back to env() */
+  padding-top: max(
+    env(safe-area-inset-top, 0px),
+    var(--tg-content-safe-area-inset-top, 0px)
+  );
+  padding-bottom: max(
+    env(safe-area-inset-bottom, 0px),
+    var(--tg-content-safe-area-inset-bottom, 0px)
+  );
+  padding-left: max(
+    env(safe-area-inset-left, 0px),
+    var(--tg-content-safe-area-inset-left, 0px)
+  );
+  padding-right: max(
+    env(safe-area-inset-right, 0px),
+    var(--tg-content-safe-area-inset-right, 0px)
+  );
 }

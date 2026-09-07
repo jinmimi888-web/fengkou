@@ -22,3 +22,14 @@ npm run dev
 - 总仓报表：总盈亏、胜率、集中度
 - 观察池新闻自动收集
 - 用户名账户，各自保存资料与仓位
+- 法律与说明页：`/about` 关于锋口、`/privacy` 隐私政策、`/terms` 用户协议
+
+## Auth env
+
+See GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET and TWITTER_CLIENT_ID / TWITTER_CLIENT_SECRET.
+- Production Google callback: https://fengkou-jinmimi888-1336.vercel.app/api/auth/callback/google
+- Local Google callback: http://localhost:8080/api/auth/callback/google
+- Production Twitter callback: https://fengkou-jinmimi888-1336.vercel.app/api/auth/callback/twitter
+- Local Twitter callback: http://localhost:8080/api/auth/callback/twitter
+- Core: BETTER_AUTH_URL, BETTER_AUTH_SECRET, DATABASE_URL, VITE_AUTH_ENABLED
+- No GROK_AUTH_* broker vars are required for social buttons.

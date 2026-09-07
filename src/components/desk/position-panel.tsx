@@ -121,7 +121,7 @@ export function PositionPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-xl bg-card p-5 shadow-[var(--shadow-border)] sm:p-6">
+      <div className="glass rounded-2xl p-5 sm:p-6">
         {holding || closed ? (
           <>
             <p className="text-xs tracking-widest text-muted-foreground">
@@ -207,7 +207,7 @@ export function PositionPanel({
 
       <form
         onSubmit={submit}
-        className="rounded-xl bg-card p-5 shadow-[var(--shadow-border)]"
+        className="glass rounded-2xl p-5"
       >
         <p className="text-xs tracking-widest text-muted-foreground">
           {holding ? "记一笔买卖" : "登记持仓 / 记买入"}
@@ -286,7 +286,7 @@ export function PositionPanel({
         </div>
       </form>
 
-      <div className="rounded-xl bg-card p-5 shadow-[var(--shadow-border)]">
+      <div className="glass rounded-2xl p-5">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs tracking-widest text-muted-foreground">该股流水</p>
           {mine.length > 0 ? (

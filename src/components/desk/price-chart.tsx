@@ -42,7 +42,7 @@ export function PriceChart({
   const fill = up ? "var(--color-up)" : "var(--color-down)";
 
   return (
-    <div className="rounded-xl bg-card p-4 shadow-[var(--shadow-border)]">
+    <div className="glass glass-tight border border-white/50 p-3 dark:border-border/70">
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-xs tracking-widest text-muted-foreground uppercase">
           走势
@@ -54,7 +54,7 @@ export function PriceChart({
               type="button"
               onClick={() => setRange(r.id)}
               className={cn(
-                "h-8 rounded-md px-2.5 text-xs",
+                "h-7 rounded px-2 text-[11px]",
                 range === r.id
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:text-foreground",
@@ -65,7 +65,7 @@ export function PriceChart({
           ))}
         </div>
       </div>
-      <div className="h-48">
+      <div className="h-52 sm:h-60">
         {data.length < 2 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
             暂无走势
@@ -75,7 +75,7 @@ export function PriceChart({
             <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="px" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={fill} stopOpacity={0.28} />
+                  <stop offset="0%" stopColor={fill} stopOpacity={0.22} />
                   <stop offset="100%" stopColor={fill} stopOpacity={0} />
                 </linearGradient>
               </defs>

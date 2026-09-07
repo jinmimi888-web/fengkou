@@ -115,3 +115,60 @@ export const runBookAnalysis = createServerFn({ method: "POST" })
     const { analyzeBook } = await import("./analyze.server");
     return analyzeBook(data);
   });
+
+const fearGreedInput = z.object({
+  fresh: z.boolean().optional(),
+});
+
+export const fetchFearGreed = createServerFn({ method: "POST" })
+  .validator((input: unknown) => fearGreedInput.parse(input ?? {}))
+  .handler(async ({ data }) => {
+    const { getFearGreed } = await import("./market.server");
+    return getFearGreed(Boolean(data?.fresh));
+  });
+
+const contractIndexInput = z.object({
+  fresh: z.boolean().optional(),
+});
+
+export const fetchContractIndex = createServerFn({ method: "POST" })
+  .validator((input: unknown) => contractIndexInput.parse(input ?? {}))
+  .handler(async ({ data }) => {
+    const { getContractIndex } = await import("./market.server");
+    return getContractIndex(Boolean(data?.fresh));
+  });
+
+
+const marketIndicesInput = z.object({
+  fresh: z.boolean().optional(),
+});
+
+export const fetchMarketIndices = createServerFn({ method: "POST" })
+  .validator((input: unknown) => marketIndicesInput.parse(input ?? {}))
+  .handler(async ({ data }) => {
+    const { getMarketIndices } = await import("./market.server");
+    return getMarketIndices(Boolean(data?.fresh));
+  });
+
+const marketCapInput = z.object({
+  symbol: z.string().min(1).max(24),
+  fresh: z.boolean().optional(),
+});
+
+export const fetchMarketCap = createServerFn({ method: "POST" })
+  .validator((input: unknown) => marketCapInput.parse(input))
+  .handler(async ({ data }) => {
+    const { getMarketCapAnalysis } = await import("./market.server");
+    return getMarketCapAnalysis(data.symbol, Boolean(data.fresh));
+  });
+
+const predictionMarketsInput = z.object({
+  fresh: z.boolean().optional(),
+});
+
+export const fetchPredictionMarkets = createServerFn({ method: "POST" })
+  .validator((input: unknown) => predictionMarketsInput.parse(input ?? {}))
+  .handler(async ({ data }) => {
+    const { getPredictionMarkets } = await import("./prediction.server");
+    return getPredictionMarkets(Boolean(data?.fresh));
+  });

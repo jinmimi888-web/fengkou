@@ -138,7 +138,7 @@ export function BookView({
 
   if (!trades.length) {
     return (
-      <div className="rounded-xl bg-card p-8 shadow-[var(--shadow-border)]">
+      <div className="glass rounded-2xl p-8">
         <p className="font-serif text-2xl">账本还是空的</p>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
           打开一只股票，在「持仓」里登记现有股数和平均成本，或记入买入卖出。锋口会按移动平均法跟踪成本和盈亏，再给你组合层面的建议。
@@ -149,7 +149,7 @@ export function BookView({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="rounded-xl bg-card p-5 shadow-[var(--shadow-border)] sm:p-6">
+      <div className="glass rounded-2xl p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs tracking-widest text-muted-foreground">账本</p>
@@ -185,26 +185,20 @@ export function BookView({
         <div className="mt-5">
           <p className="text-xs tracking-widest text-muted-foreground">计算范围</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <div className="flex rounded-lg bg-secondary p-1">
+            <div className="seg">
               <button
                 type="button"
                 onClick={() => setBookScope("all")}
-                className={
-                  !custom
-                    ? "h-9 rounded-md bg-card px-3 text-sm shadow-[var(--shadow-border)]"
-                    : "h-9 rounded-md px-3 text-sm text-muted-foreground hover:text-foreground"
-                }
+                data-active={!custom}
+                className={!custom ? "seg-item is-active h-9 px-3 text-sm" : "seg-item h-9 px-3 text-sm"}
               >
                 全部
               </button>
               <button
                 type="button"
                 onClick={() => setBookScope("custom", universe)}
-                className={
-                  custom
-                    ? "h-9 rounded-md bg-card px-3 text-sm shadow-[var(--shadow-border)]"
-                    : "h-9 rounded-md px-3 text-sm text-muted-foreground hover:text-foreground"
-                }
+                data-active={custom}
+                className={custom ? "seg-item is-active h-9 px-3 text-sm" : "seg-item h-9 px-3 text-sm"}
               >
                 自定义
               </button>
@@ -302,7 +296,7 @@ export function BookView({
         <SymbolPnlList rows={perSymbol} onOpenSymbol={onOpenSymbol} />
       ) : null}
 
-      <div className="overflow-hidden rounded-xl bg-card shadow-[var(--shadow-border)]">
+      <div className="glass overflow-hidden rounded-2xl">
         <div className="flex items-baseline justify-between gap-3 px-4 pt-4 sm:px-5">
           <p className="text-xs tracking-widest text-muted-foreground">持仓明细</p>
           <p className="text-xs text-muted-foreground">按市值权重</p>
@@ -381,7 +375,7 @@ export function BookView({
       </div>
 
       {bookAnalysis ? (
-        <div className="rounded-xl bg-card p-5 shadow-[var(--shadow-border)] sm:p-6">
+        <div className="glass rounded-2xl p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <Badge variant={bookVariant(bookAnalysis.verdict)}>
@@ -462,7 +456,7 @@ export function BookView({
           </ul>
         </div>
       ) : (
-        <div className="rounded-xl bg-card p-6 shadow-[var(--shadow-border)]">
+        <div className="glass rounded-2xl p-6">
           <p className="flex items-center gap-2 font-serif text-xl">
             <Wallet className="size-5" />
             还没有组合研判
@@ -473,7 +467,7 @@ export function BookView({
         </div>
       )}
 
-      <div className="rounded-xl bg-card p-5 shadow-[var(--shadow-border)]">
+      <div className="glass rounded-2xl p-5">
         <p className="text-xs tracking-widest text-muted-foreground">最近流水</p>
         {journal.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">暂无。</p>
@@ -520,7 +514,7 @@ function SymbolPnlList({
   onOpenSymbol: (symbol: string) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl bg-card shadow-[var(--shadow-border)]">
+    <div className="glass overflow-hidden rounded-2xl">
       <div className="px-4 pt-4 sm:px-5">
         <p className="text-xs tracking-widest text-muted-foreground">分标的总盈亏</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -712,7 +706,7 @@ function ReportMetrics({ report }: { report: BookReport }) {
       ? `${report.winCount} 盈 / ${report.loseCount} 亏${report.flatCount ? ` / ${report.flatCount} 平` : ""}`
       : "无持仓";
   return (
-    <div className="rounded-xl bg-card p-5 shadow-[var(--shadow-border)] sm:p-6">
+    <div className="glass rounded-2xl p-5 sm:p-6">
       <p className="text-xs tracking-widest text-muted-foreground">仓位与资金</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Mini label="当前市值" value={formatPrice(report.value, ccy)} />
@@ -757,7 +751,7 @@ function ReportStructure({
 
   return (
     <div className="grid gap-5 lg:grid-cols-2">
-      <div className="rounded-xl bg-card p-5 shadow-[var(--shadow-border)] sm:p-6">
+      <div className="glass rounded-2xl p-5 sm:p-6">
         <p className="text-xs tracking-widest text-muted-foreground">仓位结构</p>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <Mini
@@ -816,7 +810,7 @@ function ReportStructure({
         ) : null}
       </div>
 
-      <div className="rounded-xl bg-card p-5 shadow-[var(--shadow-border)] sm:p-6">
+      <div className="glass rounded-2xl p-5 sm:p-6">
         <p className="text-xs tracking-widest text-muted-foreground">盈亏贡献</p>
         {report.contributions.length === 0 ? (
           <p className="mt-4 text-sm text-muted-foreground">还没有可拆分的盈亏。</p>

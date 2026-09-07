@@ -67,9 +67,9 @@ export function AddSymbol({ compact, kind }: { compact?: boolean; kind?: AssetKi
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size={compact ? "sm" : "default"} className="gap-1.5">
-          <Plus className="size-4" />
-          加入观察
+        <Button size={compact ? "sm" : "default"} className={compact ? "h-7 gap-1 px-2 text-xs" : "gap-1.5"}>
+          <Plus className={compact ? "size-3.5" : "size-4"} />
+          {compact ? "添加" : "加入观察"}
         </Button>
       </DialogTrigger>
       <DialogContent>

@@ -142,10 +142,27 @@ function authPopupPlugin(): Plugin {
   };
 }
 
+
+function envPairConfigured(idKey: string, secretKey: string): boolean {
+  const id = process.env[idKey]?.trim();
+  const secret = process.env[secretKey]?.trim();
+  return Boolean(id && secret);
+}
+
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
 export default defineConfig(({ command, isPreview }) => ({
+  // Bake which social providers are configured so the SPA can hide buttons
+  // without shipping secrets. Re-run dev/build after changing GOOGLE_*/TWITTER_*.
+  define: {
+    __AUTH_HAS_GOOGLE__: JSON.stringify(
+      envPairConfigured("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"),
+    ),
+    __AUTH_HAS_TWITTER__: JSON.stringify(
+      envPairConfigured("TWITTER_CLIENT_ID", "TWITTER_CLIENT_SECRET"),
+    ),
+  },
   server: {
     host: "0.0.0.0",
     port: 8080,

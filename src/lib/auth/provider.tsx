@@ -21,13 +21,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       <TooltipProvider>
         {children}
         <Toaster
-          theme="dark"
+          theme="system"
           position="bottom-center"
           toastOptions={{
             style: {
               background: "var(--color-popover)",
               border: "1px solid var(--color-border)",
               color: "var(--color-foreground)",
+              backdropFilter: "blur(20px) saturate(180%)",
+              WebkitBackdropFilter: "blur(20px) saturate(180%)",
+              borderRadius: "14px",
+              boxShadow: "var(--shadow-glass)",
             },
           }}
         />

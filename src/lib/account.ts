@@ -128,41 +128,67 @@ export const loadAccount = createServerFn({ method: "GET" })
     return { profile, desk };
   });
 
+export type DeskSnapshotInput = z.infer<typeof snapshotSchema>;
+
+export function parseDeskSnapshot(input: unknown): DeskSnapshotInput {
+  return snapshotSchema.parse(input);
+}
+
+/** Shared upsert used by saveDesk and desk-pack import. */
+export async function upsertDeskSnapshot(
+  userId: string,
+  data: DeskSnapshotInput,
+): Promise<DeskSnapshot> {
+  const { getSql } = await import("@/lib/db");
+  const sql = await getSql();
+  const bookScope = data.bookScope === "custom" ? "custom" : "all";
+  const bookSymbols = (data.bookSymbols ?? []).slice(0, 32);
+  const snap: DeskSnapshot = {
+    symbols: data.symbols,
+    selected: data.selected,
+    board: data.board,
+    notes: data.notes,
+    analyses: data.analyses as DeskSnapshot["analyses"],
+    trades: data.trades as DeskSnapshot["trades"],
+    bookAnalysis: (data.bookAnalysis ?? null) as DeskSnapshot["bookAnalysis"],
+    bookScope,
+    bookSymbols,
+  };
+  await sql.query(
+    `insert into desks (user_id, symbols, selected, board, notes, analyses, trades, book_analysis, book_scope, book_symbols, updated_at)
+     values ($1, $2::jsonb, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb, $8::jsonb, $9, $10::jsonb, now())
+     on conflict (user_id) do update set
+       symbols = excluded.symbols,
+       selected = excluded.selected,
+       board = excluded.board,
+       notes = excluded.notes,
+       analyses = excluded.analyses,
+       trades = excluded.trades,
+       book_analysis = excluded.book_analysis,
+       book_scope = excluded.book_scope,
+       book_symbols = excluded.book_symbols,
+       updated_at = now()`,
+    [
+      userId,
+      JSON.stringify(snap.symbols),
+      snap.selected,
+      snap.board,
+      JSON.stringify(snap.notes),
+      JSON.stringify(snap.analyses),
+      JSON.stringify(snap.trades),
+      snap.bookAnalysis == null ? null : JSON.stringify(snap.bookAnalysis),
+      snap.bookScope,
+      JSON.stringify(snap.bookSymbols),
+    ],
+  );
+  return snap;
+}
+
 export const saveDesk = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: unknown) => snapshotSchema.parse(input))
   .handler(async ({ context, data }) => {
-    const { getSql } = await import("@/lib/db");
-    const sql = await getSql();
-    const bookScope = data.bookScope === "custom" ? "custom" : "all";
-    const bookSymbols = (data.bookSymbols ?? []).slice(0, 32);
-    await sql.query(
-      `insert into desks (user_id, symbols, selected, board, notes, analyses, trades, book_analysis, book_scope, book_symbols, updated_at)
-       values ($1, $2::jsonb, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb, $8::jsonb, $9, $10::jsonb, now())
-       on conflict (user_id) do update set
-         symbols = excluded.symbols,
-         selected = excluded.selected,
-         board = excluded.board,
-         notes = excluded.notes,
-         analyses = excluded.analyses,
-         trades = excluded.trades,
-         book_analysis = excluded.book_analysis,
-         book_scope = excluded.book_scope,
-         book_symbols = excluded.book_symbols,
-         updated_at = now()`,
-      [
-        context.userId,
-        JSON.stringify(data.symbols),
-        data.selected,
-        data.board,
-        JSON.stringify(data.notes),
-        JSON.stringify(data.analyses),
-        JSON.stringify(data.trades),
-        data.bookAnalysis == null ? null : JSON.stringify(data.bookAnalysis),
-        bookScope,
-        JSON.stringify(bookSymbols),
-      ],
-    );
+    await upsertDeskSnapshot(context.userId, data);
     return { ok: true as const };
   });
 

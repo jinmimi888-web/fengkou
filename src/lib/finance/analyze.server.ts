@@ -1,5 +1,12 @@
 import { getBundle, getNews } from "./market.server";
 import { isCrypto } from "./catalog";
+import {
+  filterMacroMarkets,
+  filterMarketsForSymbol,
+  formatPredictionPromptLines,
+  getPredictionMarkets,
+  toPredictionHints,
+} from "./prediction.server";
 import { DIMENSION_META } from "./types";
 import type {
   Analysis,
@@ -7,6 +14,7 @@ import type {
   BookVerdict,
   DimensionKey,
   Horizon,
+  PredictionHint,
   Severity,
   Verdict,
 } from "./types";
@@ -56,7 +64,7 @@ function clamp(n: unknown, lo: number, hi: number, fallback: number): number {
   return Math.min(hi, Math.max(lo, x));
 }
 
-function coerce(symbol: string, raw: Record<string, unknown>): Analysis {
+function coerce(symbol: string, raw: Record<string, unknown>, hints?: PredictionHint[]): Analysis {
   const dimsIn = (raw.dimensions ?? {}) as Record<string, { score?: unknown; note?: unknown }>;
   const dimensions = {} as Analysis["dimensions"];
   for (const key of DIMENSIONS) {
@@ -81,7 +89,7 @@ function coerce(symbol: string, raw: Record<string, unknown>): Analysis {
     .map((w) => String(w).slice(0, 80))
     .filter(Boolean)
     .slice(0, 5);
-  return {
+  const out: Analysis = {
     symbol,
     generatedAt: Date.now(),
     verdict: asVerdict(raw.verdict),
@@ -100,6 +108,8 @@ function coerce(symbol: string, raw: Record<string, unknown>): Analysis {
     watch: watch.length ? watch : ["下一份财报", "板块资金"],
     riskScore: clamp(raw.riskScore, 0, 100, 50),
   };
+  if (hints?.length) out.predictionHints = hints.slice(0, 3);
+  return out;
 }
 
 const recentCalls: number[] = [];
@@ -129,6 +139,23 @@ export async function analyzeSymbol(symbol: string): Promise<Analysis> {
     return fallbackAnalysis(symbol, "行情或新闻拉取失败，稍后再试。");
   }
 
+  // Prediction markets: fail soft (like missing news).
+  let predictionHints: PredictionHint[] = [];
+  let predictionSection = "";
+  try {
+    const pm = await getPredictionMarkets(false);
+    const related = filterMarketsForSymbol(pm.items, symbol, 8);
+    if (related.length) {
+      predictionHints = toPredictionHints(related, 3);
+      const lines = formatPredictionPromptLines(related, 8);
+      predictionSection = `
+相关预测市场（群众赔率/隐含概率，仅作情绪与预期参考，不是事实真相；若与盘面或新闻冲突，以价格结构与基本面为准；仅在对入场判断确有实质影响时在 summary 或 sentiment/macro 中简要提及）：
+${lines}`;
+    }
+  } catch {
+    /* ignore — 研判仍继续 */
+  }
+
   const { quote, tech } = bundle;
   const headlines = news
     .slice(0, 8)
@@ -139,13 +166,14 @@ export async function analyzeSymbol(symbol: string): Promise<Analysis> {
     .join("\n");
 
   const crypto = isCrypto(symbol);
-  const prompt = `你是冷静的${crypto ? "加密货币" : "股票"}入场研究员，不是荐股主播。根据给定的行情摘要与新闻，判断「现在是否适合新开仓」。用简体中文回答。
+  const prompt = `你是冷静的${crypto ? "加密货币" : "股票"}入场研究员，不是荐股主播。根据给定的行情摘要、新闻与（如有）相关预测市场赔率，判断「现在是否适合新开仓」。用简体中文回答。
 
 硬性要求：
 - 不承诺收益，不喊单，不编造未提供的数字。
 - ${crypto ? "估值看相对历史分位、对比特币的强弱、杠杆与监管风险，不要编造市盈率。" : "估值若缺少 PE/PS，根据价格位置、新闻与常识给区间判断，并在 note 里标明依据弱。"}
 - 默认读者是准备「现在入场」的个人投资者，仓位用占总资金百分比。
 - ${crypto ? "强调 24 小时交易、波动远大于股票，建议更小仓位。" : ""}
+- 预测市场赔率视为群众情绪信号而非真理；不要把隐含概率写成「将发生」；仅在材料充分时简要引用。
 - 只输出一个 JSON 对象，不要 markdown。
 
 JSON 字段：
@@ -182,7 +210,8 @@ RSI14=${tech.rsi14 ?? "?"}  20日年化波动=${tech.vol20 ?? "?"}
 距52周高=${tech.dist52wHigh ?? "?"}  量比=${tech.volumeRatio ?? "?"}
 
 新闻（可能含中英文，按原样理解，不要翻译成事实以外的东西）：
-${headlines || "（未取到新闻）"}`;
+${headlines || "（未取到新闻）"}
+${predictionSection}`;
 
   try {
     const res = await fetch("https://api.x.ai/v1/chat/completions", {
@@ -214,7 +243,7 @@ ${headlines || "（未取到新闻）"}`;
     };
     const text = body.choices?.[0]?.message?.content ?? "";
     const parsed = JSON.parse(text) as Record<string, unknown>;
-    return coerce(symbol, parsed);
+    return coerce(symbol, parsed, predictionHints);
   } catch {
     return fallbackAnalysis(symbol, "模型解析失败，请稍后重试。");
   }
@@ -289,6 +318,19 @@ export async function analyzeBook(snap: BookSnapshot): Promise<BookAnalysis> {
     })
     .join("\n");
 
+  let macroPredictionSection = "";
+  try {
+    const pm = await getPredictionMarkets(false);
+    const macros = filterMacroMarkets(pm.items, 5);
+    if (macros.length) {
+      macroPredictionSection = `
+宏观预测市场（群众赔率，仅作情绪参考，不是事实；组合研判中仅在实质相关时简要提及）：
+${formatPredictionPromptLines(macros, 5)}`;
+    }
+  } catch {
+    /* fail soft */
+  }
+
   const t = snap.totals;
   const prompt = `你是冷静的组合研究员。根据投资者自己登记的持仓与现价，判断「现在这本账该如何处理」。用简体中文。
 
@@ -318,7 +360,8 @@ JSON 字段：
 ${lines}
 
 新闻标题（可能含中英文，不要当成已核实事实）：
-${snap.headlines.join("\n") || "（未提供）"}`;
+${snap.headlines.join("\n") || "（未提供）"}
+${macroPredictionSection}`;
 
   try {
     const res = await fetch("https://api.x.ai/v1/chat/completions", {

@@ -1,31 +1,49 @@
 /**
- * The upstream identity providers this app offers for sign-in (via the broker).
+ * Native Better Auth social providers (Google + X/Twitter).
  *
- * Source of truth for BOTH the server (`server.ts`, one `genericOAuth` provider
- * per entry) and the client (`client.ts` / sign-in buttons). Kept in its own
- * dependency-free module so the client can import it without pulling the
- * server-only Better Auth instance (and `pg`) into the browser bundle.
+ * Source of truth for BOTH the server (`server.ts` → `socialProviders`) and the
+ * client (sign-in buttons). Kept dependency-free so the client can import it
+ * without pulling server-only Better Auth / `pg` into the browser bundle.
  *
- * Each app federates to the shared **auth broker** (`GROK_AUTH_ISSUER`), which
- * holds the real Google/X secrets. The app never sees them — it only knows its
- * own per-app client id/secret and which upstream to ask the broker for (`idp`).
- *
- * To add an upstream (e.g. GitHub) once the broker supports it: add one entry
- * here (`{ providerId: "grok-github", idp: "github", label: "GitHub" }`). The
- * `providerId` is this app's local id and the OAuth callback path segment
- * (`/api/auth/oauth2/callback/<providerId>`); `idp` is the hint the broker reads
- * to pick the upstream (Better Auth's id for X is still `twitter`).
+ * Visibility is baked at build/dev-server start from GOOGLE_ and TWITTER_ env
+ * pairs (see `vite.config.ts` `__AUTH_HAS_GOOGLE__` / `__AUTH_HAS_TWITTER__` defines). Secrets never ship to
+ * the client — only booleans.
  */
-export type GrokProvider = {
-  /** This app's local provider id; also the callback path segment. */
-  providerId: string;
-  /** Upstream hint the broker forwards to (Better Auth social id). */
-  idp: string;
+export type SocialProviderId = "google" | "twitter";
+
+export type SocialProvider = {
+  /** Better Auth social provider id (`twitter` = X). */
+  id: SocialProviderId;
   /** Human label for the sign-in button. */
   label: string;
 };
 
-export const GROK_PROVIDERS: readonly GrokProvider[] = [
-  { providerId: "grok-google", idp: "google", label: "Google" },
-  { providerId: "grok-x", idp: "twitter", label: "X" },
+
+function hasGoogle(): boolean {
+  if (typeof __AUTH_HAS_GOOGLE__ === "boolean") return __AUTH_HAS_GOOGLE__;
+  // Fallback when defines are absent (e.g. unit tests importing this module).
+  if (typeof process !== "undefined") {
+    return Boolean(
+      process.env.GOOGLE_CLIENT_ID?.trim() &&
+        process.env.GOOGLE_CLIENT_SECRET?.trim(),
+    );
+  }
+  return false;
+}
+
+function hasTwitter(): boolean {
+  if (typeof __AUTH_HAS_TWITTER__ === "boolean") return __AUTH_HAS_TWITTER__;
+  if (typeof process !== "undefined") {
+    return Boolean(
+      process.env.TWITTER_CLIENT_ID?.trim() &&
+        process.env.TWITTER_CLIENT_SECRET?.trim(),
+    );
+  }
+  return false;
+}
+
+/** Social providers that are configured and should appear in the UI. */
+export const SOCIAL_PROVIDERS: readonly SocialProvider[] = [
+  ...(hasGoogle() ? [{ id: "google" as const, label: "Google" }] : []),
+  ...(hasTwitter() ? [{ id: "twitter" as const, label: "X" }] : []),
 ];

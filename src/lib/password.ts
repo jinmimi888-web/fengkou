@@ -3,6 +3,20 @@ import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { usernameKey } from "@/lib/account";
 
+/** Same character class as username: Chinese / letters / numbers / underscore. */
+const PASSWORD_RE = /^[\u4e00-\u9fffA-Za-z0-9_]+$/;
+
+/**
+ * Shared password rules for signup, reset, set, and change.
+ * Matches existing account-name character policy (no `!` or other punctuation).
+ */
+export function passwordError(raw: string): string | null {
+  if (raw.length < 8) return "密码至少 8 位";
+  if (raw.length > 72) return "密码最多 72 位";
+  if (!PASSWORD_RE.test(raw)) return "只用中文、字母、数字或下划线";
+  return null;
+}
+
 const requestInput = z.object({
   email: z.string().min(3).max(120),
   username: z.string().min(2).max(20),
@@ -15,6 +29,10 @@ const completeInput = z.object({
 
 const changeInput = z.object({
   currentPassword: z.string().min(1).max(72),
+  newPassword: z.string().min(8).max(72),
+});
+
+const setInput = z.object({
   newPassword: z.string().min(8).max(72),
 });
 
@@ -38,6 +56,35 @@ async function ensureResetTable(
       created_at timestamptz not null default now()
     )
   `);
+}
+
+async function sessionHeaders(bearerToken?: string): Promise<Headers> {
+  const { getRequest } = await import("@tanstack/react-start/server");
+  const request = getRequest();
+  const headers = new Headers(request?.headers);
+  if (bearerToken) headers.set("Authorization", `Bearer ${bearerToken}`);
+  return headers;
+}
+
+function apiErrorZh(err: unknown): string {
+  const raw =
+    err && typeof err === "object" && "message" in err && typeof (err as { message: unknown }).message === "string"
+      ? (err as { message: string }).message
+      : err instanceof Error
+        ? err.message
+        : "";
+  const t = raw.toLowerCase();
+  if (t.includes("password already") || t.includes("already has a password")) {
+    return "这个账户已设置过登录密码，请改用修改密码";
+  }
+  if (t.includes("password is too short") || t.includes("too short")) return "密码至少 8 位";
+  if (t.includes("password is too long") || t.includes("too long")) return "密码最多 72 位";
+  if (t.includes("credential account not found")) {
+    return "这个账户没有登录密码，请先设置";
+  }
+  if (t.includes("invalid password")) return "当前密码不正确";
+  if (t.includes("unauthorized") || t.includes("session")) return "请重新登录后再试";
+  return raw || "请稍后重试";
 }
 
 export const requestPasswordReset = createServerFn({ method: "POST" })
@@ -96,6 +143,8 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
 export const completePasswordReset = createServerFn({ method: "POST" })
   .validator((input: unknown) => completeInput.parse(input))
   .handler(async ({ data }) => {
+    const bad = passwordError(data.newPassword);
+    if (bad) return { ok: false as const, error: bad };
     const { createHash } = await crypto();
     const { hashPassword } = await import("better-auth/crypto");
     const { getSql } = await import("@/lib/db");
@@ -119,10 +168,16 @@ export const completePasswordReset = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+/**
+ * Change password for accounts that already have a credential provider.
+ * Prefer `authClient.changePassword` from the UI; this remains as a server fallback.
+ */
 export const changePassword = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: unknown) => changeInput.parse(input))
   .handler(async ({ context, data }) => {
+    const bad = passwordError(data.newPassword);
+    if (bad) return { ok: false as const, error: bad };
     const { hashPassword, verifyPassword } = await import("better-auth/crypto");
     const { getSql } = await import("@/lib/db");
     const sql = await getSql();
@@ -133,7 +188,7 @@ export const changePassword = createServerFn({ method: "POST" })
     if (!acct?.password) {
       return {
         ok: false as const,
-        error: "这个账户没有登录密码，请用 Google 或 X 登录",
+        error: "这个账户没有登录密码，请先设置登录密码",
       };
     }
     const matched = await verifyPassword({
@@ -148,4 +203,28 @@ export const changePassword = createServerFn({ method: "POST" })
       [hashed, context.userId],
     );
     return { ok: true as const };
+  });
+
+/**
+ * Set a first login password for OAuth-only users (no credential account yet).
+ * better-auth 1.6 `setPassword` is SERVER_ONLY (no HTTP route), so we call
+ * `auth.api.setPassword` from this trusted server function.
+ */
+export const setLoginPassword = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => setInput.parse(input))
+  .handler(async ({ context, data }) => {
+    const bad = passwordError(data.newPassword);
+    if (bad) return { ok: false as const, error: bad };
+    const { auth } = await import("@/lib/auth/server");
+    const headers = await sessionHeaders(context.bearerToken);
+    try {
+      await auth.api.setPassword({
+        body: { newPassword: data.newPassword },
+        headers,
+      });
+      return { ok: true as const };
+    } catch (err) {
+      return { ok: false as const, error: apiErrorZh(err) };
+    }
   });

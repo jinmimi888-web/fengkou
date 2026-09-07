@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
+  ExternalLink,
   LoaderCircle,
   Newspaper,
   ScanSearch,
@@ -12,9 +13,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AddSymbol } from "@/components/desk/add-symbol";
+import { SiteFooter } from "@/components/site-footer";
 import { AccountBar } from "@/components/desk/account-bar";
 import { BookView } from "@/components/desk/book-view";
-import { NewsDesk, NewsList, NewsPulse } from "@/components/desk/news-feed";
+import { NewsDesk, NewsList, NewsRail } from "@/components/desk/news-feed";
+import { FearGreedPulse } from "@/components/desk/fear-greed";
+import { ContractIndexPulse } from "@/components/desk/contract-index";
+import { MarketIndicesPulse } from "@/components/desk/market-indices";
+import { MarketCapPulse } from "@/components/desk/market-cap";
+import { PredictionMarketsPanel } from "@/components/desk/prediction-markets";
 import { PositionPanel } from "@/components/desk/position-panel";
 import { PriceChart } from "@/components/desk/price-chart";
 import { Spark } from "@/components/desk/spark";
@@ -207,48 +214,82 @@ export function Desk() {
     ? (newsQ.data?.[0] ?? latestBySymbol.get(selected))
     : undefined;
 
+  const stockCount = symbols.filter((s) => !isCrypto(s)).length;
+  const cryptoCount = symbols.filter((s) => isCrypto(s)).length;
+
   return (
-    <div className="min-h-dvh bg-background text-foreground">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <span className="font-serif text-lg leading-none">锋</span>
-            </div>
-            <div>
-              <p className="font-serif text-xl leading-none tracking-tight">锋口</p>
-              <p className="mt-1 text-[11px] tracking-[0.18em] text-muted-foreground">
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
+      {/* —— Top bar —— */}
+      <header className="glass-nav sticky top-0 z-40 border-b border-white/40 dark:border-border/80">
+        <div className="flex min-h-12 items-center gap-1.5 px-2 py-1.5 sm:gap-3 sm:px-3 xl:px-4">
+          <div className="flex shrink-0 items-center gap-2">
+            <img
+              src="/logo.png"
+              alt="锋口"
+              width={32}
+              height={32}
+              className="size-8 rounded-xl object-cover shadow-[var(--shadow-border)]"
+            />
+            <div className="hidden sm:block">
+              <p className="font-serif text-base leading-none tracking-tight">锋口</p>
+              <p className="mt-0.5 text-[9px] tracking-[0.16em] text-muted-foreground">
                 入场研判台
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <div className="flex rounded-lg bg-secondary p-1">
+
+          <div className="seg shrink-0">
+            <button
+              type="button"
+              onClick={() => setBoard("equity")}
+              data-active={board === "equity"}
+              className={cn("seg-item px-1.5 sm:px-2.5", board === "equity" && "is-active")}
+            >
+              股票
+              <span className="ml-1 tabular-nums text-[10px] text-muted-foreground">
+                {stockCount}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setBoard("crypto")}
+              data-active={board === "crypto"}
+              className={cn("seg-item px-1.5 sm:px-2.5", board === "crypto" && "is-active")}
+            >
+              虚拟货币
+              <span className="ml-1 tabular-nums text-[10px] text-muted-foreground">
+                {cryptoCount}
+              </span>
+            </button>
+          </div>
+
+          <div className="hidden min-w-0 flex-1 overflow-hidden lg:block">
+            <IndexTape
+              items={board === "crypto" ? CRYPTO_TAPE : INDEX_TAPE}
+              bySymbol={bySymbol}
+              compact
+            />
+          </div>
+
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+            <div className="seg max-w-[42vw] overflow-x-auto sm:max-w-none">
               <button
                 type="button"
                 onClick={() => setView("desk")}
-                className={cn(
-                  "h-8 rounded-md px-3 text-sm",
-                  view === "desk"
-                    ? "bg-card text-foreground shadow-[var(--shadow-border)]"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
+                data-active={view === "desk"}
+                className={cn("seg-item", view === "desk" && "is-active")}
               >
                 研判
               </button>
               <button
                 type="button"
                 onClick={() => setView("book")}
-                className={cn(
-                  "h-8 rounded-md px-3 text-sm",
-                  view === "book"
-                    ? "bg-card text-foreground shadow-[var(--shadow-border)]"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
+                data-active={view === "book"}
+                className={cn("seg-item", view === "book" && "is-active")}
               >
                 账本
                 {bookPreview.rows.length > 0 ? (
-                  <span className="ml-1 tabular-nums text-xs text-muted-foreground">
+                  <span className="ml-0.5 tabular-nums text-[10px] text-muted-foreground">
                     {bookPreview.rows.length}
                   </span>
                 ) : null}
@@ -256,205 +297,224 @@ export function Desk() {
               <button
                 type="button"
                 onClick={() => setView("feed")}
-                className={cn(
-                  "h-8 rounded-md px-3 text-sm",
-                  view === "feed"
-                    ? "bg-card text-foreground shadow-[var(--shadow-border)]"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
+                data-active={view === "feed"}
+                className={cn("seg-item", view === "feed" && "is-active")}
               >
                 动态
                 {(riverQ.data?.length ?? 0) > 0 ? (
-                  <span className="ml-1 tabular-nums text-xs text-muted-foreground">
+                  <span className="ml-0.5 tabular-nums text-[10px] text-muted-foreground">
                     {riverQ.data!.length}
                   </span>
                 ) : null}
               </button>
             </div>
-            <AddSymbol kind={board} />
             <AccountBar />
           </div>
         </div>
-        <IndexTape
-          items={board === "crypto" ? CRYPTO_TAPE : INDEX_TAPE}
-          bySymbol={bySymbol}
-        />
-        <LivePnl
-          book={bookPreview}
-          report={report}
-          updatedAt={liveQ.dataUpdatedAt}
-          onOpen={() => setView("book")}
-        />
-        <NewsPulse
-          items={riverQ.data ?? []}
-          updatedAt={riverQ.dataUpdatedAt}
-          fetching={riverQ.isFetching}
-          onOpen={() => setView("feed")}
-        />
+
+        {/* —— Sentiment strip —— */}
+        <div className="flex items-stretch gap-1.5 overflow-x-auto border-t border-white/35 bg-white/25 px-2 py-1.5 backdrop-blur-xl dark:border-border/60 dark:bg-card/30 sm:px-3 xl:px-4">
+          <div className="flex shrink-0 items-center pr-1">
+            <span className="text-[10px] tracking-widest text-muted-foreground whitespace-nowrap">
+              市场情绪
+            </span>
+          </div>
+          <FearGreedPulse board={board} compact />
+          <ContractIndexPulse board={board} compact />
+          <MarketIndicesPulse board={board} compact />
+        </div>
       </header>
 
-      <main className="mx-auto grid min-w-0 max-w-[1400px] gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        {view === "book" ? (
-          <section className="min-w-0 lg:col-span-2">
-            <BookView
-              bySymbol={bySymbol}
-              headlines={(riverQ.data ?? []).slice(0, 8).map((n) => `${n.symbol} ${n.title}`)}
-              onOpenSymbol={(s) => {
-                select(s);
-                setTab("position");
-                setView("desk");
-              }}
-            />
-          </section>
-        ) : view === "feed" ? (
-          <section className="min-w-0 lg:col-span-2">
-            <NewsDesk
-              items={riverQ.data ?? []}
-              symbols={newsSymbols}
-              loading={riverQ.isPending && !riverQ.data}
-              fetching={riverQ.isFetching}
-              updatedAt={riverQ.dataUpdatedAt}
-              onRefresh={() => refreshNews(true)}
-              onOpenSymbol={(s) => {
-                select(s);
-                setTab("news");
-                setView("desk");
-              }}
-            />
-          </section>
-        ) : (
-          <>
-        <WatchColumn
-          symbols={symbols}
-          selected={selected}
-          board={board}
-          bySymbol={bySymbol}
-          analyses={analyses}
-          holdings={positions}
-          headlines={latestBySymbol}
-          onSelect={select}
-          onRemove={removeSymbol}
-          onBoard={setBoard}
-        />
+      {/* —— Workspace —— */}
+      {view === "book" ? (
+        <main className="mx-auto w-full max-w-[1600px] flex-1 px-3 py-4 sm:px-4 xl:px-5">
+          <BookView
+            bySymbol={bySymbol}
+            headlines={(riverQ.data ?? []).slice(0, 8).map((n) => `${n.symbol} ${n.title}`)}
+            onOpenSymbol={(s) => {
+              select(s);
+              setTab("position");
+              setView("desk");
+            }}
+          />
+        </main>
+      ) : view === "feed" ? (
+        <main className="mx-auto w-full max-w-[1600px] flex-1 px-3 py-4 sm:px-4 xl:px-5">
+          <NewsDesk
+            items={riverQ.data ?? []}
+            symbols={newsSymbols}
+            loading={riverQ.isPending && !riverQ.data}
+            fetching={riverQ.isFetching}
+            updatedAt={riverQ.dataUpdatedAt}
+            onRefresh={() => refreshNews(true)}
+            onOpenSymbol={(s) => {
+              select(s);
+              setTab("news");
+              setView("desk");
+            }}
+          />
+        </main>
+      ) : (
+        <main className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 gap-0 xl:grid-cols-[260px_minmax(0,1fr)_320px]">
+          {/* Left: watchlist */}
+          <WatchColumn
+            symbols={symbols}
+            selected={selected}
+            board={board}
+            bySymbol={bySymbol}
+            analyses={analyses}
+            holdings={positions}
+            headlines={latestBySymbol}
+            onSelect={select}
+            onRemove={removeSymbol}
+          />
 
-        <section className="min-w-0">
-          {!selected ? (
-            <EmptyDesk />
-          ) : (
-            <div className="flex flex-col gap-5">
-              <QuoteHero
-                symbol={selected}
-                bundle={active}
-                analysis={analysis}
-                holding={holding}
-                latestNews={selectedNews}
-                loading={quotesQ.isPending && liveQ.isPending}
-                analyzing={analyzeM.isPending}
-                onAnalyze={() => analyzeM.mutate()}
-                onHoldings={() => setTab("position")}
-                onNews={() => setTab("news")}
+          {/* Center: hero + chart + tabs */}
+          <section className="min-w-0 border-white/30 px-2 py-3 sm:px-3 xl:border-x xl:px-4 xl:py-3 dark:border-border/60">
+            {!selected ? (
+              <EmptyDesk />
+            ) : (
+              <div className="flex flex-col gap-3">
+                <QuoteHero
+                  symbol={selected}
+                  bundle={active}
+                  analysis={analysis}
+                  holding={holding}
+                  latestNews={selectedNews}
+                  loading={quotesQ.isPending && liveQ.isPending}
+                  analyzing={analyzeM.isPending}
+                  onAnalyze={() => analyzeM.mutate()}
+                  onHoldings={() => setTab("position")}
+                  onNews={() => setTab("news")}
+                />
+
+                <MarketCapPulse symbol={selected} />
+
+                {active && active.bars.length > 1 ? (
+                  <PriceChart bars={active.bars} currency={quote?.currency ?? ""} />
+                ) : quotesQ.isPending || quotesQ.isFetching ? (
+                  <Skeleton className="h-56 w-full rounded-2xl" />
+                ) : null}
+
+                <Tabs value={tab} onValueChange={setTab} className="min-w-0">
+                  <TabsList className="h-9 w-full justify-start overflow-x-auto rounded-full bg-secondary/60 p-0.5 sm:w-auto">
+                    <TabsTrigger value="judge" className="h-8 gap-1 px-2.5 text-xs">
+                      <ScanSearch className="size-3.5" />
+                      入场研判
+                    </TabsTrigger>
+                    <TabsTrigger value="position" className="h-8 gap-1 px-2.5 text-xs">
+                      <Wallet className="size-3.5" />
+                      持仓
+                    </TabsTrigger>
+                    <TabsTrigger value="news" className="h-8 gap-1 px-2.5 text-xs">
+                      <Newspaper className="size-3.5" />
+                      个股新闻
+                    </TabsTrigger>
+                    <TabsTrigger value="tape" className="h-8 px-2.5 text-xs">
+                      盘面
+                    </TabsTrigger>
+                    <TabsTrigger value="notes" className="h-8 px-2.5 text-xs">
+                      笔记
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="judge" className="mt-3">
+                    <AnalysisPanel
+                      analysis={analysis}
+                      note={notes[selected] ?? ""}
+                      onNote={(v) => setNote(selected, v)}
+                      analyzing={analyzeM.isPending}
+                      onAnalyze={() => analyzeM.mutate()}
+                      hideNote
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="position" className="mt-3">
+                    <PositionPanel symbol={selected} quote={quote} />
+                  </TabsContent>
+
+                  <TabsContent value="news" className="mt-3">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <p className="text-[11px] text-muted-foreground">
+                        {newsQ.dataUpdatedAt
+                          ? `${relativeTime(newsQ.dataUpdatedAt) || "刚刚"}更新 · 自动收集中`
+                          : "正在收集该股新闻"}
+                      </p>
+                      <button
+                        type="button"
+                        className="h-8 text-[11px] text-muted-foreground hover:text-foreground"
+                        onClick={() => refreshNews(true)}
+                      >
+                        立即刷新
+                      </button>
+                    </div>
+                    <NewsList
+                      items={newsQ.data ?? []}
+                      loading={newsQ.isPending && !newsQ.data}
+                      empty="暂未抓到该标的新闻"
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="tape" className="mt-3">
+                    <TechGrid bundle={active} />
+                  </TabsContent>
+
+                  <TabsContent value="notes" className="mt-3">
+                    <NoteBox
+                      note={notes[selected] ?? ""}
+                      onNote={(v) => setNote(selected, v)}
+                      standalone
+                    />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
+          </section>
+
+          {/* Right: PnL + news */}
+          <aside className="flex min-h-0 flex-col gap-2 border-t border-white/30 px-2 py-3 sm:px-3 xl:border-t-0 xl:px-3 xl:py-3 dark:border-border/60">
+            <LivePnl
+              book={bookPreview}
+              report={report}
+              updatedAt={liveQ.dataUpdatedAt}
+              onOpen={() => setView("book")}
+              compact
+            />
+            <PredictionMarketsPanel board={board} />
+            <div className="min-h-[220px] flex-1 xl:min-h-0 xl:max-h-[calc(100dvh-22rem)]">
+              <NewsRail
+                items={riverQ.data ?? []}
+                loading={riverQ.isPending && !riverQ.data}
+                fetching={riverQ.isFetching}
+                updatedAt={riverQ.dataUpdatedAt}
+                onRefresh={() => refreshNews(true)}
+                onOpenAll={() => setView("feed")}
+                onOpenSymbol={(s) => {
+                  select(s);
+                  setTab("news");
+                }}
               />
-
-              {active && active.bars.length > 1 ? (
-                <PriceChart bars={active.bars} currency={quote?.currency ?? ""} />
-              ) : quotesQ.isPending || quotesQ.isFetching ? (
-                <Skeleton className="h-64 w-full rounded-xl" />
-              ) : null}
-
-              <Tabs value={tab} onValueChange={setTab} className="min-w-0">
-                <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
-                  <TabsTrigger value="judge" className="gap-1.5">
-                    <ScanSearch className="size-3.5" />
-                    入场研判
-                  </TabsTrigger>
-                  <TabsTrigger value="position" className="gap-1.5">
-                    <Wallet className="size-3.5" />
-                    持仓
-                  </TabsTrigger>
-                  <TabsTrigger value="news" className="gap-1.5">
-                    <Newspaper className="size-3.5" />
-                    个股新闻
-                  </TabsTrigger>
-                  <TabsTrigger value="tape">盘面</TabsTrigger>
-                  <TabsTrigger value="river">全池资讯</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="judge" className="mt-4">
-                  <AnalysisPanel
-                    analysis={analysis}
-                    note={notes[selected] ?? ""}
-                    onNote={(v) => setNote(selected, v)}
-                    analyzing={analyzeM.isPending}
-                    onAnalyze={() => analyzeM.mutate()}
-                  />
-                </TabsContent>
-
-                <TabsContent value="position" className="mt-4">
-                  <PositionPanel symbol={selected} quote={quote} />
-                </TabsContent>
-
-                <TabsContent value="news" className="mt-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="text-xs text-muted-foreground">
-                      {newsQ.dataUpdatedAt
-                        ? `${relativeTime(newsQ.dataUpdatedAt) || "刚刚"}更新 · 自动收集中`
-                        : "正在收集该股新闻"}
-                    </p>
-                    <button
-                      type="button"
-                      className="h-9 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => refreshNews(true)}
-                    >
-                      立即刷新
-                    </button>
-                  </div>
-                  <NewsList
-                    items={newsQ.data ?? []}
-                    loading={newsQ.isPending && !newsQ.data}
-                    empty="暂未抓到该标的新闻"
-                  />
-                </TabsContent>
-
-                <TabsContent value="tape" className="mt-4">
-                  <TechGrid bundle={active} />
-                </TabsContent>
-
-                <TabsContent value="river" className="mt-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="text-xs text-muted-foreground">
-                      全池资讯已并入顶部「动态」，仍可在这里快览。
-                    </p>
-                    <button
-                      type="button"
-                      className="h-9 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => setView("feed")}
-                    >
-                      打开动态
-                    </button>
-                  </div>
-                  <NewsList
-                    items={riverQ.data ?? []}
-                    loading={riverQ.isPending && !riverQ.data}
-                    empty="观察池新闻正在汇集"
-                    showSymbol
-                    onOpenSymbol={(s) => {
-                      select(s);
-                      setTab("news");
-                    }}
-                  />
-                </TabsContent>
-              </Tabs>
             </div>
-          )}
-        </section>
-          </>
-        )}
-      </main>
+            {holding && holding.qty > 0 && selected ? (
+              <button
+                type="button"
+                onClick={() => setTab("position")}
+                className="glass glass-tight border border-white/45 bg-card/50 dark:border-border/70 px-2.5 py-2 text-left hover:bg-card"
+              >
+                <p className="text-[10px] tracking-widest text-muted-foreground">当前仓位</p>
+                <p className="mt-0.5 text-xs tabular-nums">
+                  {shortSymbol(selected)} · {formatQty(holding.qty)} {unitLabel(selected)}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  成本 {formatPrice(holding.avgCost, quote?.currency)}
+                </p>
+              </button>
+            ) : null}
+          </aside>
+        </main>
+      )}
 
-      <footer className="border-t border-border px-4 py-6 text-center text-xs leading-relaxed text-muted-foreground sm:px-6">
-        锋口汇集股票与虚拟货币的公开行情与新闻，并由模型做多维研判，供你决定是否现在开仓。
-        持仓与买卖流水只保存在这台设备上。内容不构成投资建议，不保证收益。入场有风险，仓位需你自己负责。
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
@@ -464,14 +524,25 @@ function LivePnl({
   report,
   updatedAt,
   onOpen,
+  compact,
 }: {
   book: ReturnType<typeof markBook>;
   report: ReturnType<typeof summarizeBook>;
   updatedAt?: number;
   onOpen: () => void;
+  compact?: boolean;
 }) {
   if (!book.rows.length && !(report && (report.realized !== 0 || report.closedCount > 0))) {
-    return null;
+    return compact ? (
+      <button
+        type="button"
+        onClick={onOpen}
+        className="glass glass-tight border border-white/40 bg-card/40 dark:border-border/60 px-2.5 py-2 text-left"
+      >
+        <p className="text-[10px] tracking-widest text-muted-foreground">实时盈亏</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">暂无持仓 · 打开账本</p>
+      </button>
+    ) : null;
   }
   const t = report
     ? report
@@ -490,6 +561,90 @@ function LivePnl({
   function signed(n: number) {
     const body = formatPrice(n, ccy);
     return n > 0 ? `+${body}` : body;
+  }
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={onOpen}
+        className="glass glass-tight border border-white/50 bg-card/70 dark:border-border/70 px-2.5 py-2 text-left hover:bg-card"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] tracking-widest text-muted-foreground">实时盈亏</span>
+          {updatedAt ? (
+            <span className="text-[10px] text-muted-foreground">
+              {relativeTime(updatedAt) || "刚刚"}
+            </span>
+          ) : null}
+        </div>
+        {t ? (
+          <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1">
+            <div>
+              <p className="text-[10px] text-muted-foreground">总盈亏</p>
+              <p
+                className={cn(
+                  "text-sm font-medium tabular-nums",
+                  total >= 0 ? "text-up" : "text-down",
+                )}
+              >
+                {signed(total)}
+              </p>
+              <p className={cn("text-[10px] tabular-nums", total >= 0 ? "text-up" : "text-down")}>
+                {formatPct(totalPct)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">浮盈</p>
+              <p
+                className={cn(
+                  "text-sm tabular-nums",
+                  unrealized >= 0 ? "text-up" : "text-down",
+                )}
+              >
+                {signed(unrealized)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">已实现</p>
+              <p
+                className={cn(
+                  "text-xs tabular-nums",
+                  realized > 0 ? "text-up" : realized < 0 ? "text-down" : "text-muted-foreground",
+                )}
+              >
+                {signed(realized)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">今日</p>
+              <p
+                className={cn(
+                  "text-xs tabular-nums",
+                  day >= 0 ? "text-up" : "text-down",
+                )}
+              >
+                {signed(day)}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            {book.groups.map((g) => (
+              <span
+                key={g.currency}
+                className={cn(
+                  "text-xs tabular-nums",
+                  g.pnl >= 0 ? "text-up" : "text-down",
+                )}
+              >
+                {g.currency} {formatPrice(g.pnl, g.currency)}
+              </span>
+            ))}
+          </div>
+        )}
+      </button>
+    );
   }
 
   return (
@@ -559,10 +714,38 @@ function LivePnl({
 function IndexTape({
   items,
   bySymbol,
+  compact,
 }: {
   items: readonly { symbol: string; label: string }[];
   bySymbol: Map<string, QuoteBundle>;
+  compact?: boolean;
 }) {
+  if (compact) {
+    return (
+      <div className="overflow-x-auto">
+        <div className="flex items-center gap-x-3 px-1 whitespace-nowrap">
+          {items.map((row) => {
+            const quote = bySymbol.get(row.symbol)?.quote;
+            const up = (quote?.changePct ?? 0) >= 0;
+            return (
+              <div
+                key={row.symbol}
+                className="flex items-center gap-1.5 text-[11px]"
+              >
+                <span className="text-muted-foreground">{row.label}</span>
+                <span className="tabular-nums">
+                  {quote ? formatPrice(quote.price, quote.currency) : "—"}
+                </span>
+                <span className={cn("tabular-nums", up ? "text-up" : "text-down")}>
+                  {quote ? formatPct(quote.changePct) : ""}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="overflow-x-hidden border-t border-border bg-card/60">
       <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 px-4 py-2">
@@ -599,7 +782,6 @@ function WatchColumn({
   headlines,
   onSelect,
   onRemove,
-  onBoard,
 }: {
   symbols: string[];
   selected: string;
@@ -610,53 +792,27 @@ function WatchColumn({
   headlines: Map<string, NewsItem>;
   onSelect: (s: string) => void;
   onRemove: (s: string) => void;
-  onBoard: (board: "equity" | "crypto") => void;
 }) {
   const visible = symbols.filter((s) => (isCrypto(s) ? "crypto" : "equity") === board);
-  const stockCount = symbols.filter((s) => !isCrypto(s)).length;
-  const cryptoCount = symbols.filter((s) => isCrypto(s)).length;
   return (
-    <aside className="min-w-0 lg:sticky lg:top-4 lg:self-start">
-      <div className="mb-3 flex items-end justify-between">
+    <aside className="min-w-0 border-b border-white/30 px-2 py-3 sm:px-3 xl:sticky xl:top-[6.5rem] xl:max-h-[calc(100dvh-6.5rem)] xl:self-start xl:overflow-y-auto xl:border-b-0 dark:border-border/60">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <div>
-          <p className="text-xs tracking-[0.16em] text-muted-foreground uppercase">
+          <p className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
             观察池
           </p>
-          <p className="font-serif text-lg">{board === "crypto" ? "虚拟货币" : "准备入场"}</p>
+          <p className="text-sm font-medium">
+            {board === "crypto" ? "虚拟货币" : "股票"}
+          </p>
         </div>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {symbols.length}/16
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-muted-foreground tabular-nums">
+            {symbols.length}/16
+          </span>
+          <AddSymbol kind={board} compact />
+        </div>
       </div>
-      <div className="mb-3 flex rounded-lg bg-secondary p-1">
-        <button
-          type="button"
-          onClick={() => onBoard("equity")}
-          className={cn(
-            "h-8 flex-1 rounded-md px-2 text-sm",
-            board === "equity"
-              ? "bg-card text-foreground shadow-[var(--shadow-border)]"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          股票
-          <span className="ml-1 tabular-nums text-xs text-muted-foreground">{stockCount}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onBoard("crypto")}
-          className={cn(
-            "h-8 flex-1 rounded-md px-2 text-sm",
-            board === "crypto"
-              ? "bg-card text-foreground shadow-[var(--shadow-border)]"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          虚拟货币
-          <span className="ml-1 tabular-nums text-xs text-muted-foreground">{cryptoCount}</span>
-        </button>
-      </div>
-      <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible">
+      <div className="flex gap-1.5 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
         {visible.map((sym) => {
           const b = bySymbol.get(sym);
           const q = b?.quote;
@@ -671,70 +827,59 @@ function WatchColumn({
             <div
               key={sym}
               className={cn(
-                "relative w-64 shrink-0 rounded-xl p-3 lg:w-full",
+                "relative w-56 shrink-0 rounded-md border px-2.5 py-2 xl:w-full",
                 selected === sym
-                  ? "bg-card shadow-[var(--shadow-border-hover)]"
-                  : "bg-card/40 shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]",
+                  ? "border-bone/40 bg-card/90 shadow-[var(--shadow-border-hover)] backdrop-blur-xl"
+                  : "border-white/40 bg-card/35 hover:border-white/60 hover:bg-card/70 backdrop-blur-md dark:border-border/50",
               )}
             >
               <button
                 type="button"
                 onClick={() => onSelect(sym)}
-                className="flex w-full items-start gap-2 pr-7 text-left"
+                className="flex w-full items-start gap-2 pr-6 text-left"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-medium tracking-wide">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate text-[13px] font-medium tracking-wide">
                       {shortSymbol(sym)}
                     </span>
                     {holdings.get(sym)?.qty ? (
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="h-5 px-1 text-[10px]">
                         持 {formatQty(holdings.get(sym)!.qty)}
                       </Badge>
                     ) : null}
                     {v ? (
-                      <Badge variant={verdictVariant(v)}>
+                      <Badge variant={verdictVariant(v)} className="h-5 px-1 text-[10px]">
                         {VERDICT_META[v].label}
                       </Badge>
                     ) : null}
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className="truncate text-[10px] text-muted-foreground">
                     {displayName(sym, q?.name)}
                   </p>
-                  <p className="mt-1 text-sm tabular-nums">
-                    {q && q.price > 0 ? formatPrice(q.price, q.currency) : "—"}
+                  <div className="mt-1 flex items-baseline gap-1.5">
+                    <span className="text-[13px] tabular-nums">
+                      {q && q.price > 0 ? formatPrice(q.price, q.currency) : "—"}
+                    </span>
                     <span
-                      className={cn("ml-2 text-xs", up ? "text-up" : "text-down")}
+                      className={cn("text-[11px] tabular-nums", up ? "text-up" : "text-down")}
                     >
                       {q && q.price > 0 ? formatPct(q.changePct) : ""}
                     </span>
-                  </p>
+                  </div>
                   {marked ? (
                     <p
                       className={cn(
-                        "mt-0.5 text-xs tabular-nums",
+                        "mt-0.5 text-[10px] tabular-nums",
                         marked.pnl >= 0 ? "text-up" : "text-down",
                       )}
                     >
                       {marked.pnl >= 0 ? "盈" : "亏"} {formatPrice(marked.pnl, q?.currency)}{" "}
                       {formatPct(marked.pnlPct)}
-                      {Math.abs(pos?.realized ?? 0) > 1e-8 ? (
-                        <span
-                          className={cn(
-                            "ml-1.5",
-                            marked.pnl + (pos?.realized ?? 0) >= 0 ? "text-up" : "text-down",
-                          )}
-                        >
-                          总 {formatPrice(marked.pnl + (pos?.realized ?? 0), q?.currency)}
-                        </span>
-                      ) : null}
-                      <span className="ml-1.5 text-muted-foreground">
-                        今 {formatPrice(marked.dayPnl, q?.currency)}
-                      </span>
                     </p>
                   ) : null}
                   {headlines.get(sym) ? (
-                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                    <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
                       {headlines.get(sym)!.title}
                     </p>
                   ) : null}
@@ -745,15 +890,15 @@ function WatchColumn({
                 type="button"
                 aria-label={`移除 ${sym}`}
                 onClick={() => onRemove(sym)}
-                className="absolute top-1.5 right-1.5 flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
+                className="absolute top-1 right-1 flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
               >
-                <Trash2 className="size-3.5" />
+                <Trash2 className="size-3" />
               </button>
             </div>
           );
         })}
         {visible.length === 0 ? (
-          <div className="w-full rounded-xl bg-card p-5 text-sm text-muted-foreground shadow-[var(--shadow-border)]">
+          <div className="w-full glass glass-tight border border-white/40 bg-card/40 dark:border-border/50 p-3 text-xs text-muted-foreground">
             {board === "crypto" ? "点上方加入观察，搜索比特币或 ETH。" : "先加入一只准备入场的股票。"}
           </div>
         ) : null}
@@ -792,25 +937,27 @@ function QuoteHero({
       ? positionPnl(holding, q.price, q.previousClose, q.changePct)
       : null;
   return (
-    <div className="flex flex-col gap-4 rounded-xl bg-card p-5 shadow-[var(--shadow-border)] sm:flex-row sm:items-end sm:justify-between">
+    <div className="flex flex-col gap-3 glass glass-tight border border-white/50 bg-card/70 dark:border-border/70 p-3 sm:flex-row sm:items-end sm:justify-between sm:p-4">
       <div className="min-w-0">
-        <p className="text-xs tracking-[0.18em] text-muted-foreground">
+        <p className="text-[10px] tracking-[0.16em] text-muted-foreground">
           {isCrypto(symbol) ? "虚拟货币" : q?.exchange ? exchangeLabel(q.exchange) : "市场"}
         </p>
-        <h1 className="mt-1 font-serif text-3xl tracking-tight sm:text-4xl">
-          {displayName(symbol, q?.name)}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">{shortSymbol(symbol)}</p>
+        <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <h1 className="font-serif text-2xl tracking-tight sm:text-3xl">
+            {displayName(symbol, q?.name)}
+          </h1>
+          <span className="text-xs text-muted-foreground">{shortSymbol(symbol)}</span>
+        </div>
         {loading && !q ? (
-          <Skeleton className="mt-4 h-10 w-40" />
+          <Skeleton className="mt-3 h-9 w-36" />
         ) : (
-          <div className="mt-4 flex flex-wrap items-end gap-3">
-            <span className="text-4xl font-medium tabular-nums tracking-tight">
+          <div className="mt-2 flex flex-wrap items-end gap-2.5">
+            <span className="text-3xl font-medium tabular-nums tracking-tight sm:text-4xl">
               {q && q.price > 0 ? formatPrice(q.price, q.currency) : "—"}
             </span>
             <span
               className={cn(
-                "mb-1 inline-flex items-center gap-1 text-sm tabular-nums",
+                "mb-0.5 inline-flex items-center gap-0.5 text-sm tabular-nums",
                 up ? "text-up" : "text-down",
               )}
             >
@@ -821,16 +968,22 @@ function QuoteHero({
               )}
               {q && q.price > 0 ? formatPct(q.changePct) : ""}
             </span>
+            {q && q.volume != null && q.volume > 0 ? (
+              <span className="mb-0.5 text-[11px] text-muted-foreground">
+                量 {formatVolume(q.volume)}
+              </span>
+            ) : null}
           </div>
         )}
         {marked ? (
           <button
             type="button"
             onClick={onHoldings}
-            className="mt-3 text-left text-sm hover:text-foreground"
+            className="mt-2 text-left text-xs hover:text-foreground"
           >
             <span className="text-muted-foreground">
-              持 {formatQty(holding!.qty)} {unitLabel(symbol)} · 成本 {formatPrice(holding!.avgCost, q?.currency)}
+              持 {formatQty(holding!.qty)} {unitLabel(symbol)} · 成本{" "}
+              {formatPrice(holding!.avgCost, q?.currency)}
             </span>
             <span
               className={cn(
@@ -861,16 +1014,17 @@ function QuoteHero({
           <button
             type="button"
             onClick={onHoldings}
-            className="mt-3 text-left text-sm text-muted-foreground hover:text-foreground"
+            className="mt-2 text-left text-xs text-muted-foreground hover:text-foreground"
           >
-            持 {formatQty(holding.qty)} {unitLabel(symbol)} · 成本 {formatPrice(holding.avgCost, q?.currency)}
+            持 {formatQty(holding.qty)} {unitLabel(symbol)} · 成本{" "}
+            {formatPrice(holding.avgCost, q?.currency)}
           </button>
         ) : null}
         {latestNews ? (
           <button
             type="button"
             onClick={onNews}
-            className="mt-2 max-w-xl text-left text-xs text-muted-foreground hover:text-foreground"
+            className="mt-1.5 max-w-xl text-left text-[11px] text-muted-foreground hover:text-foreground"
           >
             <span className="text-bone">最新</span>
             <span className="mx-1.5">{latestNews.title}</span>
@@ -878,7 +1032,7 @@ function QuoteHero({
           </button>
         ) : null}
       </div>
-      <div className="flex flex-col items-stretch gap-2 sm:items-end">
+      <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
         {analysis ? (
           <Badge
             variant={verdictVariant(analysis.verdict)}
@@ -887,9 +1041,9 @@ function QuoteHero({
             {VERDICT_META[analysis.verdict].label}
           </Badge>
         ) : (
-          <span className="text-xs text-muted-foreground">尚未研判</span>
+          <span className="text-[11px] text-muted-foreground">尚未研判</span>
         )}
-        <Button onClick={onAnalyze} disabled={analyzing} className="min-w-40">
+        <Button onClick={onAnalyze} disabled={analyzing} className="min-w-36">
           {analyzing ? (
             <>
               <LoaderCircle className="size-4 animate-spin" />
@@ -912,24 +1066,26 @@ function AnalysisPanel({
   onNote,
   analyzing,
   onAnalyze,
+  hideNote,
 }: {
   analysis?: Analysis;
   note: string;
   onNote: (v: string) => void;
   analyzing: boolean;
   onAnalyze: () => void;
+  hideNote?: boolean;
 }) {
   if (!analysis) {
     return (
-      <div className="rounded-xl bg-card p-6 shadow-[var(--shadow-border)]">
-        <p className="font-serif text-2xl">先做一次入场研判</p>
+      <div className="glass glass-tight border border-white/50 bg-card/70 dark:border-border/70 p-5">
+        <p className="font-serif text-xl">先做一次入场研判</p>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
           模型会读取该股近期新闻、涨跌、波动与均线位置，从舆情、催化、动量、估值、流动性、宏观六个维度打分，并给出仓位区间与失效条件。
         </p>
-        <Button className="mt-5" onClick={onAnalyze} disabled={analyzing}>
+        <Button className="mt-4" onClick={onAnalyze} disabled={analyzing}>
           {analyzing ? "正在研判" : "开始研判"}
         </Button>
-        <NoteBox note={note} onNote={onNote} />
+        {!hideNote ? <NoteBox note={note} onNote={onNote} /> : null}
       </div>
     );
   }
@@ -937,7 +1093,7 @@ function AnalysisPanel({
   const v = analysis.verdict;
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-xl bg-card p-5 shadow-[var(--shadow-border)] sm:p-6">
+      <div className="glass glass-tight border border-white/50 bg-card/70 dark:border-border/70 p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <Badge variant={verdictVariant(v)}>{VERDICT_META[v].label}</Badge>
@@ -975,6 +1131,40 @@ function AnalysisPanel({
           <p className="text-xs tracking-widest text-muted-foreground">入场计划</p>
           <p className="mt-1 text-sm leading-relaxed">{analysis.entryPlan}</p>
         </div>
+        {analysis.predictionHints && analysis.predictionHints.length > 0 ? (
+          <div className="mt-4 rounded-lg border border-border/60 bg-secondary/50 p-3">
+            <p className="text-[11px] tracking-widest text-muted-foreground">
+              相关预测市场（群众赔率，仅供参考）
+            </p>
+            <ul className="mt-2 space-y-2">
+              {analysis.predictionHints.slice(0, 3).map((h) => {
+                const prob =
+                  h.yesProb % 1 === 0 ? String(h.yesProb) : h.yesProb.toFixed(1);
+                return (
+                  <li key={`${h.platform}:${h.url}:${h.title}`}>
+                    <a
+                      href={h.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-start gap-2 text-sm leading-snug hover:text-foreground"
+                    >
+                      <span className="mt-0.5 shrink-0 rounded bg-background/80 px-1 py-px text-[10px] text-muted-foreground">
+                        {h.platformLabel}
+                      </span>
+                      <span className="min-w-0 flex-1 text-muted-foreground group-hover:text-foreground">
+                        {h.title}
+                        <span className="ml-1 tabular-nums text-foreground">
+                          Yes {prob}%
+                        </span>
+                      </span>
+                      <ExternalLink className="mt-0.5 size-3 shrink-0 text-muted-foreground opacity-60" />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -983,7 +1173,7 @@ function AnalysisPanel({
           return (
             <div
               key={key}
-              className="rounded-xl bg-card p-4 shadow-[var(--shadow-border)]"
+              className="glass glass-tight border border-white/45 bg-card/70 dark:border-border/60 p-3"
             >
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm">{DIMENSION_META[key].label}</p>
@@ -1003,7 +1193,7 @@ function AnalysisPanel({
         })}
       </div>
 
-      <div className="rounded-xl bg-card p-5 shadow-[var(--shadow-border)]">
+      <div className="glass glass-tight border border-white/50 bg-card/70 dark:border-border/70 p-4">
         <p className="flex items-center gap-2 text-sm">
           <AlertTriangle className="size-4 text-down" />
           投资风险
@@ -1046,7 +1236,7 @@ function AnalysisPanel({
         )}
       </div>
 
-      <NoteBox note={note} onNote={onNote} />
+      {!hideNote ? <NoteBox note={note} onNote={onNote} /> : null}
     </div>
   );
 }
@@ -1063,15 +1253,22 @@ function Stat({ label, value }: { label: string; value: string }) {
 function NoteBox({
   note,
   onNote,
+  standalone,
 }: {
   note: string;
   onNote: (v: string) => void;
+  standalone?: boolean;
 }) {
   const [value, setValue] = useState(note);
   useEffect(() => setValue(note), [note]);
   return (
-    <div className="mt-4 rounded-xl bg-card p-4 shadow-[var(--shadow-border)]">
-      <p className="text-xs tracking-widest text-muted-foreground">
+    <div
+      className={cn(
+        "glass glass-tight border border-white/50 bg-card/70 dark:border-border/70 p-3 sm:p-4",
+        !standalone && "mt-4",
+      )}
+    >
+      <p className="text-[10px] tracking-widest text-muted-foreground">
         入场理由（仅自己可见）
       </p>
       <Textarea
@@ -1114,7 +1311,7 @@ function TechGrid({ bundle }: { bundle?: QuoteBundle }) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
       {rows.map(([k, v]) => (
-        <div key={k} className="rounded-xl bg-card p-4 shadow-[var(--shadow-border)]">
+        <div key={k} className="glass glass-tight border border-white/45 bg-card/70 dark:border-border/60 p-3">
           <p className="text-[11px] text-muted-foreground">{k}</p>
           <p className="mt-1 text-sm tabular-nums">{v}</p>
         </div>
@@ -1125,8 +1322,8 @@ function TechGrid({ bundle }: { bundle?: QuoteBundle }) {
 
 function EmptyDesk() {
   return (
-    <div className="rounded-xl bg-card p-8 shadow-[var(--shadow-border)]">
-      <p className="font-serif text-2xl">观察池是空的</p>
+    <div className="glass glass-tight border border-white/50 bg-card/70 dark:border-border/70 p-6">
+      <p className="font-serif text-xl">观察池是空的</p>
       <p className="mt-2 text-sm text-muted-foreground">
         加入你准备现在入场的股票，锋口会收集新闻并给出多维建议。
       </p>

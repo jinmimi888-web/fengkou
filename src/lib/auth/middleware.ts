@@ -24,6 +24,9 @@ import { createMiddleware } from "@tanstack/react-start";
  * `DATABASE_URL` is also set, so an app without sign-in must not use this at
  * all. On the auth-on path, use it on every server function that touches
  * per-user data and scope every query by `context.userId`.
+ *
+ * `bearerToken` is also forwarded on the server context so handlers that call
+ * `auth.api.*` (e.g. setPassword) can present the preview session.
  */
 export const authMiddleware = createMiddleware({ type: "function" })
   .client(async ({ next }) => {
@@ -43,5 +46,10 @@ export const authMiddleware = createMiddleware({ type: "function" })
     // Reject scripted cross-site/sibling requests before touching per-user data.
     assertSameSiteRequest();
     const userId = await requireUserId(context.bearerToken);
-    return next({ context: { userId } });
+    return next({
+      context: {
+        userId,
+        bearerToken: context.bearerToken as string | undefined,
+      },
+    });
   });
